@@ -9,6 +9,7 @@ import { timeout } from "hono/timeout";
 import router from "./app/routes";
 import GlobalErrorHandler from "./app/middlewares/globalErrorHandler";
 import { config } from "./config";
+import prisma from "./shared/prisma";
 import {
   initializeQueueSystem,
   setupGracefulShutdown,
@@ -104,6 +105,11 @@ app.use("*", async (c, next) => {
 
 initializeQueueSystem();
 setupGracefulShutdown();
+
+// Warm up Prisma connection to avoid first-request latency spikes.
+prisma.$connect().catch((err) => {
+  console.error("❌ Prisma connection error:", (err as any)?.message ?? err);
+});
 // --------------------
 // Routes
 // --------------------

@@ -23,6 +23,10 @@ import type {
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
+const isUniqueConstraintError = (error: unknown) => {
+  return Boolean((error as any)?.code === "P2002");
+};
+
 const getJwtSecret = () => {
   const secret = config.jwt.jwt_secret;
   if (!secret) {
@@ -233,32 +237,34 @@ export const registerService = async (payload: RegisterInput) => {
 export const registerWithoutOtpService = async (payload: RegisterInput) => {
   const email = normalizeEmail(payload.email);
 
-  const existing = await prisma.userAuth.findUnique({ where: { email } });
-  if (existing) {
-    throw new ApiError(
-      httpStatus.CONFLICT,
-      "User with this email already exists"
-    );
-  }
-
   const passwordHash = await hashPassword(payload.password);
 
-  const created = await prisma.userAuth.create({
-    data: {
-      email,
-      password: passwordHash,
-      role: UserRole.USER,
-      provider: "EMAIL_PASSWORD",
-    },
-  });
-
-  await prisma.userDetails.create({
-    data: {
-      userId: created.id,
-      firstName: payload.firstName,
-      lastName: payload.lastName,
-    },
-  });
+  let created: { id: string; email: string };
+  try {
+    created = await prisma.userAuth.create({
+      data: {
+        email,
+        password: passwordHash,
+        role: UserRole.USER,
+        provider: "EMAIL_PASSWORD",
+        userDetails: {
+          create: {
+            firstName: payload.firstName,
+            lastName: payload.lastName,
+          },
+        },
+      },
+      select: { id: true, email: true },
+    });
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      throw new ApiError(
+        httpStatus.CONFLICT,
+        "User with this email already exists"
+      );
+    }
+    throw error;
+  }
 
   return {
     id: created.id,
@@ -280,31 +286,33 @@ export const verifyEmailOtpService = async (payload: VerifyEmailOtpInput) => {
     throw new ApiError(httpStatus.BAD_REQUEST, "Invalid OTP");
   }
 
-  const existing = await prisma.userAuth.findUnique({ where: { email } });
-  if (existing) {
+  let created: { id: string; email: string };
+  try {
+    created = await prisma.userAuth.create({
+      data: {
+        email,
+        password: stored.signup.passwordHash,
+        role: UserRole.USER,
+        provider: "EMAIL_PASSWORD",
+        userDetails: {
+          create: {
+            firstName: stored.signup.firstName,
+            lastName: stored.signup.lastName,
+          },
+        },
+      },
+      select: { id: true, email: true },
+    });
+  } catch (error) {
     await clearOtp(key);
-    throw new ApiError(
-      httpStatus.CONFLICT,
-      "User with this email already exists"
-    );
+    if (isUniqueConstraintError(error)) {
+      throw new ApiError(
+        httpStatus.CONFLICT,
+        "User with this email already exists"
+      );
+    }
+    throw error;
   }
-
-  const created = await prisma.userAuth.create({
-    data: {
-      email,
-      password: stored.signup.passwordHash,
-      role: UserRole.USER,
-      provider: "EMAIL_PASSWORD",
-    },
-  });
-
-  await prisma.userDetails.create({
-    data: {
-      userId: created.id,
-      firstName: stored.signup.firstName,
-      lastName: stored.signup.lastName,
-    },
-  });
 
   await clearOtp(key);
 
@@ -316,7 +324,16 @@ export const verifyEmailOtpService = async (payload: VerifyEmailOtpInput) => {
 
 export const loginService = async (payload: LoginInput) => {
   const email = normalizeEmail(payload.email);
-  const user = await prisma.userAuth.findUnique({ where: { email } });
+  const user = await prisma.userAuth.findUnique({
+    where: { email },
+    select: {
+      id: true,
+      email: true,
+      password: true,
+      role: true,
+      provider: true,
+    },
+  });
   if (!user || !user.password) {
     throw new ApiError(httpStatus.UNAUTHORIZED, "Invalid credentials");
   }

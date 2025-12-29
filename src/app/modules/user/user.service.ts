@@ -5,6 +5,10 @@ import ApiError from "../../../error/ApiErrors";
 import prisma from "../../../shared/prisma";
 import { hashPassword } from "../../../utils/passwordHelpers";
 
+const isUniqueConstraintError = (error: unknown) => {
+  return Boolean((error as any)?.code === "P2002");
+};
+
 type UserDetailsInput = {
   address?: string;
   phone?: string;
@@ -58,41 +62,42 @@ const getAllUsersService = async () => {
 
 const createUserService = async (payload: CreateUserInput) => {
   try {
-    const existingUser = await prisma.userAuth.findUnique({
-      where: { email: payload.email },
-    });
-
-    if (existingUser) {
-      throw new ApiError(
-        httpStatus.CONFLICT,
-        "User with this email already exists"
-      );
-    }
-
     const hashed = await hashPassword(payload.password);
 
-    const auth = await prisma.userAuth.create({
-      data: {
-        email: payload.email,
-        password: hashed,
-        role: payload.role ?? UserRole.USER,
-      },
-    });
+    try {
+      const auth = await prisma.userAuth.create({
+        data: {
+          email: payload.email,
+          password: hashed,
+          role: payload.role ?? UserRole.USER,
+          provider: "EMAIL_PASSWORD",
+          userDetails: {
+            create: {
+              address: payload.address,
+              phone: payload.phone,
+              firstName: payload.firstName,
+              lastName: payload.lastName,
+            },
+          },
+        },
+        include: {
+          userDetails: true,
+        },
+      });
 
-    const details = await prisma.userDetails.create({
-      data: {
-        userId: auth.id,
-        address: payload.address,
-        phone: payload.phone,
-        firstName: payload.firstName,
-        lastName: payload.lastName,
-      },
-    });
-
-    return {
-      ...sanitizeAuth(auth),
-      details,
-    };
+      return {
+        ...sanitizeAuth(auth),
+        details: auth.userDetails,
+      };
+    } catch (error) {
+      if (isUniqueConstraintError(error)) {
+        throw new ApiError(
+          httpStatus.CONFLICT,
+          "User with this email already exists"
+        );
+      }
+      throw error;
+    }
   } catch (error) {
     rethrowOrWrap(error, "Failed to create user");
   }
