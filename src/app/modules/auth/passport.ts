@@ -15,6 +15,7 @@ import ApiError from "../../../error/ApiErrors";
 import prisma from "../../../shared/prisma";
 import { UserRole } from "@prisma/client";
 import { issueTokensAndSession } from "./auth.service";
+import { setAuthCookies } from "./auth.cookies";
 
 type MinimalUser = { id: string; email: string; role: UserRole };
 
@@ -324,6 +325,8 @@ export const googleAuthCallback = async (c: Context) => {
       }
     );
 
+    setAuthCookies(c, tokens);
+
     return c.json(
       {
         success: true,
@@ -370,6 +373,8 @@ export const facebookAuthCallback = async (c: Context) => {
         ipAddress,
       }
     );
+
+    setAuthCookies(c, tokens);
 
     return c.json(
       {

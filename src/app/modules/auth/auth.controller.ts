@@ -1,6 +1,7 @@
 import type { Context } from "hono";
 import catchAsync from "../../../shared/catchAsync";
 import sendResponse from "../../../shared/sendResponse";
+import { setAuthCookies } from "./auth.cookies";
 import {
   forgotPasswordService,
   loginService,
@@ -59,6 +60,14 @@ export const loginController = catchAsync(async (c: Context) => {
   }
 
   const result = await loginService(body);
+
+  // Store tokens in secure HttpOnly cookies for browser clients.
+  setAuthCookies(c, {
+    accessToken: result.accessToken,
+    refreshToken: result.refreshToken,
+    sessionId: result.sessionId,
+  });
+
   return sendResponse(c, {
     statusCode: 200,
     success: true,
@@ -82,6 +91,14 @@ export const loginWithoutOtpController = catchAsync(async (c: Context) => {
   }
 
   const result = await loginWithoutOtpService(body);
+
+  // Store tokens in secure HttpOnly cookies for browser clients.
+  setAuthCookies(c, {
+    accessToken: result.accessToken,
+    refreshToken: result.refreshToken,
+    sessionId: result.sessionId,
+  });
+
   return sendResponse(c, {
     statusCode: 200,
     success: true,

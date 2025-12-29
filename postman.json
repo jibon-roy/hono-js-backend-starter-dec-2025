@@ -366,6 +366,11 @@
             "method": "GET",
             "header": [
               { "key": "X-Request-Id", "value": "{{$guid}}", "type": "text" },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              },
               { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" },
               {
                 "key": "X-API-Access-Token",
@@ -387,6 +392,11 @@
                 "type": "text"
               },
               { "key": "X-Request-Id", "value": "{{$guid}}", "type": "text" },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              },
               { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" },
               {
                 "key": "X-API-Access-Token",
@@ -424,6 +434,11 @@
             "method": "GET",
             "header": [
               { "key": "X-Request-Id", "value": "{{$guid}}", "type": "text" },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              },
               { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" },
               {
                 "key": "X-API-Access-Token",
@@ -445,6 +460,11 @@
                 "type": "text"
               },
               { "key": "X-Request-Id", "value": "{{$guid}}", "type": "text" },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              },
               { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" },
               {
                 "key": "X-API-Access-Token",
@@ -471,6 +491,11 @@
                 "type": "text"
               },
               { "key": "X-Request-Id", "value": "{{$guid}}", "type": "text" },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              },
               { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" },
               {
                 "key": "X-API-Access-Token",
@@ -497,6 +522,11 @@
                 "type": "text"
               },
               { "key": "X-Request-Id", "value": "{{$guid}}", "type": "text" },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              },
               { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" },
               {
                 "key": "X-API-Access-Token",
@@ -518,6 +548,11 @@
             "method": "DELETE",
             "header": [
               { "key": "X-Request-Id", "value": "{{$guid}}", "type": "text" },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              },
               { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" },
               {
                 "key": "X-API-Access-Token",
