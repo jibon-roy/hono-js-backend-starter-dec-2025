@@ -47,6 +47,12 @@ export type HonoBindings = {
 
   // Password
   PASSWORD_SALT?: string;
+
+  // OAuth (Passport)
+  GOOGLE_CLIENT_ID?: string;
+  GOOGLE_CLIENT_SECRET?: string;
+  FACEBOOK_APP_ID?: string;
+  FACEBOOK_APP_SECRET?: string;
 };
 
 const hasProcessEnv =
@@ -126,6 +132,14 @@ export const createConfig = (env: HonoBindings = {}) => {
       backend_url: merged.BACKEND_URL,
       image_url: merged.BACKEND_IMAGE_URL,
       database_url: merged.DATABASE_URL,
+    },
+    google: {
+      client_id: merged.GOOGLE_CLIENT_ID,
+      client_secret: merged.GOOGLE_CLIENT_SECRET,
+    },
+    facebook: {
+      app_id: merged.FACEBOOK_APP_ID,
+      app_secret: merged.FACEBOOK_APP_SECRET,
     },
   };
 };

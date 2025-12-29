@@ -86,6 +86,7 @@ app.use(
       "Authorization",
       "X-API-Access-Token",
       "X-API-Key",
+      "X-Device-Id",
       "X-Request-Id",
     ],
     // If origin is wildcard, credentials must be disabled.

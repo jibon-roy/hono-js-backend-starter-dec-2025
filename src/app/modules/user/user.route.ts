@@ -1,7 +1,6 @@
 import { Hono } from "hono";
 import validateRequest from "../../middlewares/validateRequest";
 import {
-  createUserController,
   deleteUserController,
   getAllUsersController,
   getUserByIdController,
@@ -15,13 +14,6 @@ const userRouter = new Hono();
 
 //  get all user
 userRouter.get("/all", getAllUsersController);
-
-// create user
-userRouter.post(
-  "/",
-  validateRequest(userValidation.createUserSchema),
-  createUserController
-);
 
 // get user by id
 userRouter.get(

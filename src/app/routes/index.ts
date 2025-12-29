@@ -9,6 +9,7 @@ import { apiKeyMiddleware } from "../middlewares/apiKeyMiddleware";
 import { apiAccessTokenMiddleware } from "../middlewares/apiAccessTokenMiddleware";
 
 import userRouter from "../modules/user/user.route";
+import authRouter from "../modules/auth/auth.route";
 
 const router = new Hono();
 
@@ -19,6 +20,7 @@ router.use("/users/*", apiKeyMiddleware);
 router.use("/users/*", apiAccessTokenMiddleware);
 
 // Mount sub-routers
+router.route("/auth", authRouter);
 router.route("/users", userRouter);
 
 // Bull Board UI (queues monitor)
