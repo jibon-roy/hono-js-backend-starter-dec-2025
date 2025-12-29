@@ -6,6 +6,7 @@ import {
   loginService,
   loginWithoutOtpService,
   registerService,
+  registerWithoutOtpService,
   resetPasswordService,
   verifyEmailOtpService,
 } from "./auth.service";
@@ -17,6 +18,17 @@ export const registerController = catchAsync(async (c: Context) => {
     statusCode: 201,
     success: true,
     message: "OTP sent to email. Please verify to complete registration",
+    data: result,
+  });
+});
+
+export const registerWithoutOtpController = catchAsync(async (c: Context) => {
+  const body = await c.req.json();
+  const result = await registerWithoutOtpService(body);
+  return sendResponse(c, {
+    statusCode: 201,
+    success: true,
+    message: "User registered successfully",
     data: result,
   });
 });

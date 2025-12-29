@@ -5,6 +5,7 @@ import {
   loginController,
   loginWithoutOtpController,
   registerController,
+  registerWithoutOtpController,
   resetPasswordController,
   verifyEmailOtpController,
 } from "./auth.controller";
@@ -22,6 +23,12 @@ authRouter.post(
   "/register",
   validateRequest(authValidation.registerSchema),
   registerController
+);
+
+authRouter.post(
+  "/register-without-otp",
+  validateRequest(authValidation.registerSchema),
+  registerWithoutOtpController
 );
 
 authRouter.post(

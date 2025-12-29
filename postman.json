@@ -1,0 +1,549 @@
+{
+  "info": {
+    "_postman_id": "8f3bb2b3-9f0a-4a12-9f04-2a5b9b2f0d3a",
+    "name": "Hono JS Starter (API v1)",
+    "description": "Ready-to-import Postman Collection (v2.1).\n\nBase URL defaults to http://localhost:5000/api/v1\n\nProtected endpoints (e.g. /users/*) require headers:\n- X-API-Key\n- X-API-Access-Token (falls back to API_KEY if empty in server config)\n\nOTP-based flows: you'll still need to read the OTP from your email/SMS and paste it into the variable testOtp.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Ensure defaults exist so you can run requests without manual setup.",
+          "const ensure = (k, v) => {",
+          "  const cur = pm.collectionVariables.get(k);",
+          "  if (cur === undefined || cur === null || String(cur).trim() === '') {",
+          "    pm.collectionVariables.set(k, v);",
+          "  }",
+          "};",
+          "ensure('baseUrl', 'http://localhost:5000/api/v1');",
+          "ensure('apiKey', '1234567890');",
+          "ensure('apiAccessToken', '1234567890');",
+          "ensure('deviceId', 'postman-device-1');",
+          "ensure('testFirstName', 'Test');",
+          "ensure('testLastName', 'User');",
+          "ensure('testPassword', 'Password123');",
+          "// Generate a unique email if not set.",
+          "ensure('testEmail', `test+${Date.now()}@example.com`);",
+          "// OTP must be filled manually after you receive it.",
+          "ensure('testOtp', '');"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api/v1",
+      "type": "string"
+    },
+    { "key": "apiKey", "value": "1234567890", "type": "string" },
+    { "key": "apiAccessToken", "value": "1234567890", "type": "string" },
+    { "key": "deviceId", "value": "postman-device-1", "type": "string" },
+
+    { "key": "testFirstName", "value": "Test", "type": "string" },
+    { "key": "testLastName", "value": "User", "type": "string" },
+    { "key": "testEmail", "value": "test@example.com", "type": "string" },
+    { "key": "testPassword", "value": "Password123", "type": "string" },
+    { "key": "testOtp", "value": "", "type": "string" },
+    { "key": "newEmail", "value": "new-email@example.com", "type": "string" },
+    { "key": "newPassword", "value": "Password789", "type": "string" },
+
+    { "key": "userId", "value": "", "type": "string" },
+    { "key": "sessionId", "value": "", "type": "string" },
+    { "key": "accessToken", "value": "", "type": "string" },
+    { "key": "refreshToken", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register (send email OTP)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              { "key": "X-Request-Id", "value": "{{$guid}}", "type": "text" },
+              { "key": "X-Device-Id", "value": "{{deviceId}}", "type": "text" },
+              { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" },
+              {
+                "key": "X-API-Access-Token",
+                "value": "{{apiAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"{{testFirstName}}\",\n  \"lastName\": \"{{testLastName}}\",\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/auth/register"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "try {",
+                  "  const json = pm.response.json();",
+                  "  if (json?.data?.email) pm.collectionVariables.set('testEmail', json.data.email);",
+                  "} catch (e) {}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register Without OTP (direct create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              { "key": "X-Request-Id", "value": "{{$guid}}", "type": "text" },
+              { "key": "X-Device-Id", "value": "{{deviceId}}", "type": "text" },
+              { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" },
+              {
+                "key": "X-API-Access-Token",
+                "value": "{{apiAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"{{testFirstName}}\",\n  \"lastName\": \"{{testLastName}}\",\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/auth/register-without-otp"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "try {",
+                  "  const json = pm.response.json();",
+                  "  if (json?.data?.id) pm.collectionVariables.set('userId', json.data.id);",
+                  "  if (json?.data?.email) pm.collectionVariables.set('testEmail', json.data.email);",
+                  "} catch (e) {}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify Email OTP (complete registration)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              { "key": "X-Request-Id", "value": "{{$guid}}", "type": "text" },
+              { "key": "X-Device-Id", "value": "{{deviceId}}", "type": "text" },
+              { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" },
+              {
+                "key": "X-API-Access-Token",
+                "value": "{{apiAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"otp\": \"{{testOtp}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/auth/verify-email-otp"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "try {",
+                  "  const json = pm.response.json();",
+                  "  if (json?.data?.id) pm.collectionVariables.set('userId', json.data.id);",
+                  "} catch (e) {}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login (email + password)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              { "key": "X-Request-Id", "value": "{{$guid}}", "type": "text" },
+              { "key": "X-Device-Id", "value": "{{deviceId}}", "type": "text" },
+              { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" },
+              {
+                "key": "X-API-Access-Token",
+                "value": "{{apiAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\",\n  \"deviceId\": \"{{deviceId}}\",\n  \"deviceType\": \"postman\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "try {",
+                  "  const json = pm.response.json();",
+                  "  const data = json?.data;",
+                  "  if (data?.accessToken) pm.collectionVariables.set('accessToken', data.accessToken);",
+                  "  if (data?.refreshToken) pm.collectionVariables.set('refreshToken', data.refreshToken);",
+                  "  if (data?.sessionId) pm.collectionVariables.set('sessionId', data.sessionId);",
+                  "  if (data?.user?.id) pm.collectionVariables.set('userId', data.user.id);",
+                  "} catch (e) {}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Without OTP (email + password)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              { "key": "X-Request-Id", "value": "{{$guid}}", "type": "text" },
+              { "key": "X-Device-Id", "value": "{{deviceId}}", "type": "text" },
+              { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" },
+              {
+                "key": "X-API-Access-Token",
+                "value": "{{apiAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\",\n  \"deviceId\": \"{{deviceId}}\",\n  \"deviceType\": \"postman\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/auth/login-without-otp"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "try {",
+                  "  const json = pm.response.json();",
+                  "  const data = json?.data;",
+                  "  if (data?.accessToken) pm.collectionVariables.set('accessToken', data.accessToken);",
+                  "  if (data?.refreshToken) pm.collectionVariables.set('refreshToken', data.refreshToken);",
+                  "  if (data?.sessionId) pm.collectionVariables.set('sessionId', data.sessionId);",
+                  "  if (data?.user?.id) pm.collectionVariables.set('userId', data.user.id);",
+                  "} catch (e) {}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Forgot Password (send OTP)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              { "key": "X-Request-Id", "value": "{{$guid}}", "type": "text" },
+              { "key": "X-Device-Id", "value": "{{deviceId}}", "type": "text" },
+              { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" },
+              {
+                "key": "X-API-Access-Token",
+                "value": "{{apiAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/auth/forgot-password"
+          }
+        },
+        {
+          "name": "Reset Password (OTP + new password)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              { "key": "X-Request-Id", "value": "{{$guid}}", "type": "text" },
+              { "key": "X-Device-Id", "value": "{{deviceId}}", "type": "text" },
+              { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" },
+              {
+                "key": "X-API-Access-Token",
+                "value": "{{apiAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"otp\": \"{{testOtp}}\",\n  \"newPassword\": \"Password456\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/auth/reset-password"
+          }
+        },
+        {
+          "name": "Social Login (Google) - Redirect",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Request-Id", "value": "{{$guid}}", "type": "text" },
+              { "key": "X-Device-Id", "value": "{{deviceId}}", "type": "text" }
+            ],
+            "url": "{{baseUrl}}/auth/social-login/google"
+          }
+        },
+        {
+          "name": "Social Login (Facebook) - Redirect",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Request-Id", "value": "{{$guid}}", "type": "text" },
+              { "key": "X-Device-Id", "value": "{{deviceId}}", "type": "text" }
+            ],
+            "url": "{{baseUrl}}/auth/social-login/facebook"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users (Protected)",
+      "item": [
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Request-Id", "value": "{{$guid}}", "type": "text" },
+              { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" },
+              {
+                "key": "X-API-Access-Token",
+                "value": "{{apiAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/users/all"
+          }
+        },
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              { "key": "X-Request-Id", "value": "{{$guid}}", "type": "text" },
+              { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" },
+              {
+                "key": "X-API-Access-Token",
+                "value": "{{apiAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\",\n  \"firstName\": \"{{testFirstName}}\",\n  \"lastName\": \"{{testLastName}}\",\n  \"phone\": \"\",\n  \"address\": \"\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/users/"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "try {",
+                  "  const json = pm.response.json();",
+                  "  const id = json?.data?.id;",
+                  "  if (id) pm.collectionVariables.set('userId', id);",
+                  "} catch (e) {}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get User By Id",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Request-Id", "value": "{{$guid}}", "type": "text" },
+              { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" },
+              {
+                "key": "X-API-Access-Token",
+                "value": "{{apiAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/users/{{userId}}"
+          }
+        },
+        {
+          "name": "Update User By Id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              { "key": "X-Request-Id", "value": "{{$guid}}", "type": "text" },
+              { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" },
+              {
+                "key": "X-API-Access-Token",
+                "value": "{{apiAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"{{testFirstName}}\",\n  \"lastName\": \"{{testLastName}}\",\n  \"phone\": \"\",\n  \"address\": \"\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/users/{{userId}}"
+          }
+        },
+        {
+          "name": "Update User Password",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              { "key": "X-Request-Id", "value": "{{$guid}}", "type": "text" },
+              { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" },
+              {
+                "key": "X-API-Access-Token",
+                "value": "{{apiAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"{{newPassword}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/users/{{userId}}/password"
+          }
+        },
+        {
+          "name": "Update User Email",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              { "key": "X-Request-Id", "value": "{{$guid}}", "type": "text" },
+              { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" },
+              {
+                "key": "X-API-Access-Token",
+                "value": "{{apiAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{newEmail}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/users/{{userId}}/email"
+          }
+        },
+        {
+          "name": "Delete User By Id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "X-Request-Id", "value": "{{$guid}}", "type": "text" },
+              { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" },
+              {
+                "key": "X-API-Access-Token",
+                "value": "{{apiAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/users/{{userId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "System",
+      "item": [
+        {
+          "name": "Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Request-Id", "value": "{{$guid}}", "type": "text" }
+            ],
+            "url": "{{baseUrl}}/../status"
+          }
+        }
+      ]
+    }
+  ]
+}

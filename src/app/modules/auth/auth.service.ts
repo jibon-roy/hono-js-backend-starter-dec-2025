@@ -228,6 +228,44 @@ export const registerService = async (payload: RegisterInput) => {
   };
 };
 
+// Dedicated entry-point for "register without OTP".
+// Creates the user immediately (no Redis OTP, no email verification step).
+export const registerWithoutOtpService = async (payload: RegisterInput) => {
+  const email = normalizeEmail(payload.email);
+
+  const existing = await prisma.userAuth.findUnique({ where: { email } });
+  if (existing) {
+    throw new ApiError(
+      httpStatus.CONFLICT,
+      "User with this email already exists"
+    );
+  }
+
+  const passwordHash = await hashPassword(payload.password);
+
+  const created = await prisma.userAuth.create({
+    data: {
+      email,
+      password: passwordHash,
+      role: UserRole.USER,
+      provider: "EMAIL_PASSWORD",
+    },
+  });
+
+  await prisma.userDetails.create({
+    data: {
+      userId: created.id,
+      firstName: payload.firstName,
+      lastName: payload.lastName,
+    },
+  });
+
+  return {
+    id: created.id,
+    email: created.email,
+  };
+};
+
 export const verifyEmailOtpService = async (payload: VerifyEmailOtpInput) => {
   const email = normalizeEmail(payload.email);
   const key = otpKey("email", email);
