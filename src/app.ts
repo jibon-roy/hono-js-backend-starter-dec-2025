@@ -10,6 +10,10 @@ import { timeout } from "hono/timeout";
 import router from "./app/routes";
 import GlobalErrorHandler from "./app/middlewares/globalErrorHandler";
 import { config } from "./config";
+import {
+  initializeQueueSystem,
+  setupGracefulShutdown,
+} from "./helpers/queue-manager/queueManager";
 
 const app = new Hono();
 
@@ -79,6 +83,8 @@ app.use("*", async (c, next) => {
   }
 });
 
+initializeQueueSystem();
+setupGracefulShutdown();
 // --------------------
 // Routes
 // --------------------
