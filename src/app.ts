@@ -4,7 +4,6 @@ import { cors } from "hono/cors";
 import { bodyLimit } from "hono/body-limit";
 import { compress } from "hono/compress";
 import { logger } from "hono/logger";
-import { requestId } from "hono/request-id";
 import { secureHeaders } from "hono/secure-headers";
 import { timeout } from "hono/timeout";
 import router from "./app/routes";
@@ -14,14 +13,32 @@ import {
   initializeQueueSystem,
   setupGracefulShutdown,
 } from "./helpers/queue-manager/queueManager";
+import status from "http-status";
 
 const app = new Hono();
+
+const normalizeOrigin = (value?: string) => {
+  if (!value) return "";
+  // Origins never include a trailing slash; env URLs often do.
+  return value.trim().replace(/\/+$/, "");
+};
 
 // --------------------
 // Middlewares
 // --------------------
 
-app.use("*", requestId());
+app.use("*", async (c, next) => {
+  const incoming = c.req.header("x-request-id");
+  const requestId = incoming?.trim()
+    ? incoming.trim()
+    : globalThis.crypto?.randomUUID
+    ? globalThis.crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+  c.set("requestId", requestId);
+  await next();
+  c.header("X-Request-Id", requestId);
+});
 
 app.use(
   "*",
@@ -58,7 +75,8 @@ app.use(
       if (!origin) return "*";
 
       // Prefer a strict allow-list in production.
-      if (config.frontend_url && origin === config.frontend_url) return origin;
+      const allowed = normalizeOrigin(config.frontend_url);
+      if (allowed && normalizeOrigin(origin) === allowed) return origin;
       if (config.env !== "production") return origin;
       return "";
     },
@@ -88,7 +106,14 @@ setupGracefulShutdown();
 // --------------------
 // Routes
 // --------------------
-app.route("/", router);
+
+// Root route
+app.get("/status", (c) => {
+  return c.json({ status: status.OK, message: "API is running ✅" });
+});
+
+// Mount the main router under /api/v1
+app.route("/api/v1/", router);
 
 app.onError((err, c) => GlobalErrorHandler(err, c));
 

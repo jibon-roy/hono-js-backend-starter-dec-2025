@@ -6,7 +6,6 @@ import prisma from "../../../shared/prisma";
 import { hashPassword } from "../../../utils/passwordHelpers";
 
 type UserDetailsInput = {
-  name?: string;
   address?: string;
   phone?: string;
   firstName?: string;
@@ -83,7 +82,6 @@ const createUserService = async (payload: CreateUserInput) => {
     const details = await prisma.userDetails.create({
       data: {
         userId: auth.id,
-        name: payload.name,
         address: payload.address,
         phone: payload.phone,
         firstName: payload.firstName,
@@ -133,14 +131,12 @@ const updateUserByIdService = async (id: string, payload: UpdateUserInput) => {
       where: { userId: id },
       create: {
         userId: id,
-        name: payload.name,
         address: payload.address,
         phone: payload.phone,
         firstName: payload.firstName,
         lastName: payload.lastName,
       },
       update: {
-        name: payload.name,
         address: payload.address,
         phone: payload.phone,
         firstName: payload.firstName,

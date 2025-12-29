@@ -15,6 +15,7 @@ export type HonoBindings = {
 
   // Auth
   API_KEY?: string;
+  API_ACCESS_TOKEN?: string;
   JWT_SECRET?: string;
   EXPIRES_IN?: string;
   REFRESH_TOKEN_SECRET?: string;
@@ -85,6 +86,9 @@ export const createConfig = (env: HonoBindings = {}) => {
     },
     jwt: {
       api_key: merged.API_KEY,
+      // Keep backward compatibility with existing deployments that only set API_KEY.
+      // If API_ACCESS_TOKEN is not provided, X-API-Access-Token will validate against API_KEY.
+      api_access_token: merged.API_ACCESS_TOKEN ?? merged.API_KEY,
       jwt_secret: merged.JWT_SECRET,
       expires_in: merged.EXPIRES_IN,
       refresh_token_secret: merged.REFRESH_TOKEN_SECRET,

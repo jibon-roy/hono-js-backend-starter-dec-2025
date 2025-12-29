@@ -7,31 +7,112 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
+///////////////////////////////
+// CORE USER (IDENTITY + AUTH)
+///////////////////////////////
 model UserAuth {
     id       String   @id @default(auto()) @map("_id") @db.ObjectId
     email    String   @unique
     password String?
     role     UserRole @default(USER)
+    provider Provider @default(EMAIL_PASSWORD)
+
+    /// Relations
+    userDetails UserDetails?
+    sessions    UserSession[]
+    oauth       OAuthAccount[]
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 }
 
+///////////////////////////////
+// USER PROFILE (OPTIONAL DATA)
+///////////////////////////////
 model UserDetails {
-    id        String  @id @default(auto()) @map("_id") @db.ObjectId
-    userId    String  @unique @db.ObjectId
-    name      String?
-    address   String?
-    phone     String?
+    id     String @id @default(auto()) @map("_id") @db.ObjectId
+    userId String @unique @db.ObjectId
+
+    /// Profile fields
     firstName String?
     lastName  String?
+    address   String?
+    phone     String?
+
+    /// Relation
+    user UserAuth @relation(fields: [userId], references: [id], onDelete: Cascade)
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 }
 
+///////////////////////////////
+// MULTI-DEVICE SESSIONS
+///////////////////////////////
+model UserSession {
+    id     String @id @default(auto()) @map("_id") @db.ObjectId
+    userId String @db.ObjectId
+
+    /// Hashed refresh token (NEVER store raw token)
+    refreshToken String
+
+    /// Device metadata
+    deviceId   String
+    deviceType String?
+    userAgent  String?
+    ipAddress  String?
+
+    /// Token lifecycle
+    expiresAt DateTime
+    revokedAt DateTime?
+
+    /// Relation
+    user UserAuth @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([userId])
+    @@index([deviceId])
+}
+
+///////////////////////////////
+// OAUTH PROVIDER ACCOUNTS
+///////////////////////////////
+model OAuthAccount {
+    id     String @id @default(auto()) @map("_id") @db.ObjectId
+    userId String @db.ObjectId
+
+    provider       Provider
+    providerUserId String
+
+    /// Optional (only if calling provider APIs)
+    accessToken  String?
+    refreshToken String?
+    expiresAt    DateTime?
+
+    user UserAuth @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@unique([provider, providerUserId])
+    @@index([userId])
+}
+
+///////////////////////////////
+// ENUMS
+///////////////////////////////
 enum UserRole {
     ADMIN
     USER
     GUEST
+}
+
+enum Provider {
+    EMAIL_PASSWORD
+    GOOGLE
+    FACEBOOK
+    TWITTER
+    GITHUB
 }
