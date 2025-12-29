@@ -1,0 +1,42 @@
+{
+  "name": "hono-js-starter-2025-dec",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run prisma:generate && bun run --hot src/server.ts",
+    "start": "bun run prisma:generate && bun run src/server.ts",
+    "typecheck": "bunx tsc -p tsconfig.json --noEmit",
+    "prisma:generate": "bunx prisma generate --schema prisma/schema/schema.prisma",
+    "prisma:push": "bunx prisma db push --schema prisma/schema/schema.prisma",
+    "build": "bun run prisma:generate && bun run typecheck"
+  },
+  "dependencies": {
+    "@bull-board/api": "^6.16.2",
+    "@bull-board/hono": "^6.16.2",
+    "@bull-board/ui": "^6.16.2",
+    "@prisma/client": "^6.19.1",
+    "@sendgrid/mail": "^8.1.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/nodemailer": "^7.0.4",
+    "@types/pg": "^8.16.0",
+    "bcryptjs": "^3.0.3",
+    "bullmq": "^5.66.4",
+    "date-fns": "^4.1.0",
+    "dotenv": "^17.2.3",
+    "hono": "^4.11.3",
+    "http-status": "^2.1.0",
+    "ioredis": "^5.8.2",
+    "jsonwebtoken": "^9.0.3",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^7.0.12",
+    "pg": "^8.16.3",
+    "twilio": "^5.11.1",
+    "winston": "^3.19.0",
+    "winston-daily-rotate-file": "^5.0.0",
+    "zod": "^4.2.1"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "prisma": "^6.19.1",
+    "tsx": "^4.21.0"
+  }
+}
