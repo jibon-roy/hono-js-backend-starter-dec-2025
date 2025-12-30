@@ -50,26 +50,61 @@ app.use(
   })
 );
 
+// Scope heavier middleware to the API namespace.
+// This keeps lightweight endpoints (like / and /status) fast and stable under load.
 app.use(
-  "*",
+  "/api/v1/*",
   bodyLimit({
     maxSize: config.http.max_body_size,
     onError: (c) =>
       c.json({ success: false, message: "Payload too large" }, 413),
   })
 );
-
-app.use("*", timeout(config.http.request_timeout_ms));
-
-// Compress responses (particularly helpful for JSON).
-app.use("*", compress());
-
-// Logger middleware for requests
-app.use("*", logger());
-
-// CORS middleware (allow all origins, you can customize)
 app.use(
-  "*",
+  "/api/v1",
+  bodyLimit({
+    maxSize: config.http.max_body_size,
+    onError: (c) =>
+      c.json({ success: false, message: "Payload too large" }, 413),
+  })
+);
+app.use("/api/v1/*", timeout(config.http.request_timeout_ms));
+app.use("/api/v1", timeout(config.http.request_timeout_ms));
+app.use("/api/v1/*", compress());
+app.use("/api/v1", compress());
+if (config.env !== "production") {
+  app.use("/api/v1/*", logger());
+  app.use("/api/v1", logger());
+}
+
+app.use(
+  "/api/v1/*",
+  cors({
+    origin: (origin) => {
+      // Non-browser clients may not send Origin.
+      if (!origin) return "*";
+
+      // Prefer a strict allow-list in production.
+      const allowed = normalizeOrigin(config.frontend_url);
+      if (allowed && normalizeOrigin(origin) === allowed) return origin;
+      if (config.env !== "production") return origin;
+      return "";
+    },
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-API-Access-Token",
+      "X-API-Key",
+      "X-Device-Id",
+      "X-Request-Id",
+    ],
+    // If origin is wildcard, credentials must be disabled.
+    credentials: Boolean(config.frontend_url),
+  })
+);
+app.use(
+  "/api/v1",
   cors({
     origin: (origin) => {
       // Non-browser clients may not send Origin.
@@ -96,7 +131,13 @@ app.use(
 );
 
 // Default to JSON content type only when a handler didn't already set one.
-app.use("*", async (c, next) => {
+app.use("/api/v1/*", async (c, next) => {
+  await next();
+  if (!c.res.headers.get("Content-Type")) {
+    c.header("Content-Type", "application/json");
+  }
+});
+app.use("/api/v1", async (c, next) => {
   await next();
   if (!c.res.headers.get("Content-Type")) {
     c.header("Content-Type", "application/json");
@@ -114,13 +155,16 @@ prisma.$connect().catch((err) => {
 // Routes
 // --------------------
 
+// Root route (kept intentionally lightweight for uptime checks / load tests).
+app.get("/", (c) => c.text("OK"));
+
 // Root route
 app.get("/status", (c) => {
   return c.json({ status: status.OK, message: "API is running ✅" });
 });
 
 // Mount the main router under /api/v1
-app.route("/api/v1/", router);
+app.route("/api/v1", router);
 
 app.onError((err, c) => GlobalErrorHandler(err, c));
 

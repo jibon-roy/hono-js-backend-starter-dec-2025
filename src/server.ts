@@ -48,4 +48,11 @@ function main() {
   }
 }
 
-main();
+// Keep a strong reference to the server to prevent it from being GC'd.
+// In Bun, if the returned server becomes unreachable, the process may exit.
+const server = main();
+(globalThis as any).__server = server;
+
+if (!server) {
+  process.exitCode = 1;
+}

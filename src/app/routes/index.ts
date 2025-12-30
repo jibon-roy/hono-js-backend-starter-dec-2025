@@ -13,6 +13,9 @@ import authRouter from "../modules/auth/auth.route";
 
 const router = new Hono();
 
+// Public API health check.
+router.get("/", (c) => c.json({ status: "ok" }));
+
 // Protect all API routes except the root health check.
 router.use("/users", apiKeyMiddleware);
 router.use("/users", apiAccessTokenMiddleware);
