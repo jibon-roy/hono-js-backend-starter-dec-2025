@@ -10,6 +10,7 @@ import { apiAccessTokenMiddleware } from "../middlewares/apiAccessTokenMiddlewar
 
 import userRouter from "../modules/user/user.route";
 import authRouter from "../modules/auth/auth.route";
+import sendResponse from "../../shared/sendResponse";
 
 const router = new Hono();
 
@@ -34,6 +35,12 @@ router.use(`${bullBoardBasePath}/*`, apiAccessTokenMiddleware);
 router.route(bullBoardBasePath, bullBoard);
 
 // Catch-all 404
-router.all("*", (c) => c.json({ error: "Route not found" }, 404));
+router.all("*", (c) => {
+  return sendResponse(c, {
+    statusCode: 404,
+    success: false,
+    message: `Cannot ${c.req.method} ${c.req.url}`,
+  });
+});
 
 export default router;

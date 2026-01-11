@@ -12,18 +12,16 @@ const sendResponse = <T>(
       limit: number;
       total: number;
     };
-    data: T | null | undefined;
+    data?: T | null | undefined;
   }
 ) => {
-  return c.json(
-    {
-      success: jsonData.success,
-      message: jsonData.message,
-      meta: jsonData.meta ?? null,
-      data: jsonData.data ?? null,
-    },
-    jsonData.statusCode as any
-  );
+  if (jsonData.data === undefined) {
+    delete jsonData.data;
+  }
+  if (jsonData.meta === undefined) {
+    delete jsonData.meta;
+  }
+  return c.json(jsonData, jsonData.statusCode as any);
 };
 
 export default sendResponse;

@@ -15,6 +15,7 @@ import {
   setupGracefulShutdown,
 } from "./helpers/queue-manager/queueManager";
 import status from "http-status";
+import sendResponse from "./shared/sendResponse";
 
 const app = new Hono();
 
@@ -160,12 +161,28 @@ prisma.$connect().catch((err) => {
 
 // Root route
 app.get("/status", (c) => {
-  return c.json({ status: status.OK, message: "API is running ✅" });
+  return sendResponse(c, {
+    message: "OK",
+    statusCode: status.OK,
+    success: true,
+    data: {
+      status: "OK",
+      timestamp: new Date().toISOString(),
+    },
+  });
 });
 
 // Mount the main router under /api/v1
 app.route("/api/v1", router);
 
 app.onError((err, c) => GlobalErrorHandler(err, c));
+
+app.all("*", (c) => {
+  return sendResponse(c, {
+    statusCode: 404,
+    success: false,
+    message: `Cannot ${c.req.method} ${c.req.url}`,
+  });
+});
 
 export default app;
