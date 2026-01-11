@@ -156,7 +156,7 @@ prisma.$connect().catch((err) => {
 // --------------------
 
 // Root route (kept intentionally lightweight for uptime checks / load tests).
-app.get("/", (c) => c.text("OK"));
+// app.get("/", (c) => c.json("OK"));
 
 // Root route
 app.get("/status", (c) => {
