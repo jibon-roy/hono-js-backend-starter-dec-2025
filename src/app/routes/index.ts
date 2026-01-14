@@ -11,6 +11,7 @@ import { apiAccessTokenMiddleware } from "../middlewares/apiAccessTokenMiddlewar
 import userRouter from "../modules/user/user.route";
 import authRouter from "../modules/auth/auth.route";
 import sendResponse from "../../shared/sendResponse";
+import uploadRouter from "../modules/upload/upload.route";
 
 const router = new Hono();
 
@@ -22,6 +23,8 @@ router.use("/users", apiKeyMiddleware);
 router.use("/users", apiAccessTokenMiddleware);
 router.use("/users/*", apiKeyMiddleware);
 router.use("/users/*", apiAccessTokenMiddleware);
+router.route("/uploads", uploadRouter);
+
 
 // Mount sub-routers
 router.route("/auth", authRouter);

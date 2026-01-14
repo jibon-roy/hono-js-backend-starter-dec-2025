@@ -6,6 +6,7 @@ import { compress } from "hono/compress";
 import { logger } from "hono/logger";
 import { secureHeaders } from "hono/secure-headers";
 import { timeout } from "hono/timeout";
+import { serveStatic } from "hono/bun";
 import router from "./app/routes";
 import GlobalErrorHandler from "./app/middlewares/globalErrorHandler";
 import { config } from "./config";
@@ -16,6 +17,7 @@ import {
 } from "./helpers/queue-manager/queueManager";
 import status from "http-status";
 import sendResponse from "./shared/sendResponse";
+import { initiateAdmin } from "./app/db";
 
 const app = new Hono();
 
@@ -25,9 +27,25 @@ const normalizeOrigin = (value?: string) => {
   return value.trim().replace(/\/+$/, "");
 };
 
+const shouldSkipHeavyApiMiddleware = (requestPath: string) => {
+  // Uploads are streamed to disk; avoid small global body limits/timeouts.
+  return requestPath.startsWith("/api/v1/uploads");
+};
+
+initiateAdmin();
+
 // --------------------
 // Middlewares
 // --------------------
+
+// Serve uploaded files publicly: /upload/...
+app.use(
+  "/upload/*",
+  serveStatic({
+    root: "./upload",
+    rewriteRequestPath: (p) => p.replace(/^\/upload/, ""),
+  })
+);
 
 app.use("*", async (c, next) => {
   const incoming = c.req.header("x-request-id");
@@ -53,24 +71,29 @@ app.use(
 
 // Scope heavier middleware to the API namespace.
 // This keeps lightweight endpoints (like / and /status) fast and stable under load.
-app.use(
-  "/api/v1/*",
-  bodyLimit({
-    maxSize: config.http.max_body_size,
-    onError: (c) =>
-      c.json({ success: false, message: "Payload too large" }, 413),
-  })
-);
-app.use(
-  "/api/v1",
-  bodyLimit({
-    maxSize: config.http.max_body_size,
-    onError: (c) =>
-      c.json({ success: false, message: "Payload too large" }, 413),
-  })
-);
-app.use("/api/v1/*", timeout(config.http.request_timeout_ms));
-app.use("/api/v1", timeout(config.http.request_timeout_ms));
+const apiBodyLimit = bodyLimit({
+  maxSize: config.http.max_body_size,
+  onError: (c) => c.json({ success: false, message: "Payload too large" }, 413),
+});
+const apiTimeout = timeout(config.http.request_timeout_ms);
+
+app.use("/api/v1/*", async (c, next) => {
+  if (shouldSkipHeavyApiMiddleware(c.req.path)) return next();
+  return apiBodyLimit(c, next);
+});
+app.use("/api/v1", async (c, next) => {
+  if (shouldSkipHeavyApiMiddleware(c.req.path)) return next();
+  return apiBodyLimit(c, next);
+});
+
+app.use("/api/v1/*", async (c, next) => {
+  if (shouldSkipHeavyApiMiddleware(c.req.path)) return next();
+  return apiTimeout(c, next);
+});
+app.use("/api/v1", async (c, next) => {
+  if (shouldSkipHeavyApiMiddleware(c.req.path)) return next();
+  return apiTimeout(c, next);
+});
 app.use("/api/v1/*", compress());
 app.use("/api/v1", compress());
 if (config.env !== "production") {
@@ -161,15 +184,7 @@ prisma.$connect().catch((err) => {
 
 // Root route
 app.get("/status", (c) => {
-  return sendResponse(c, {
-    message: "OK",
-    statusCode: status.OK,
-    success: true,
-    data: {
-      status: "OK",
-      timestamp: new Date().toISOString(),
-    },
-  });
+  return c.json({ status: status.OK, message: "API is running ✅" });
 });
 
 // Mount the main router under /api/v1
